@@ -179,6 +179,21 @@
             });
             update();
         }
+        function createCode() {
+            var program = '';
+            boxes.forEach((box) => {
+                var w2 = box.w / 2;
+                var h2 = box.h / 2;
+                var boxcode = 'local box' + box.id + ' = playbox.body.new(' + box.w + ' / WORLD_PIXEL_SCALE, ' + box.h + ' / WORLD_PIXEL_SCALE, 0)\n';
+                boxcode += 'box' + box.id + ':setCenter(' + (box.x + w2) + ' / WORLD_PIXEL_SCALE, ' + (box.y + h2) + ' / WORLD_PIXEL_SCALE)\n';
+                boxcode += 'box' + box.id + ':setFriction(0.1)\n';
+                boxcode += 'box' + box.id + ':setRotation(' + box.r + ')\n';
+                boxcode += 'boxes[#boxes + 1] = box' + box.id + '\n';
+                boxcode += 'world:addBody(box' + box.id + ')\n\n';
+                program += boxcode;
+            });
+            document.getElementById('text-area').value = program;
+        }
     </script>
 </head>
 <body>
@@ -205,7 +220,9 @@
         <button onclick="saveJSON()">Save to JSON</button>
         <input type="text" id="json-text"/>
         <button onclick="loadJSON()">Load from JSON</button>
+        <button onclick="createCode()">Create Code</button>
     </div>
+    <textarea id='text-area' style="width: 95%; min-height: 200px"></textarea>
     
 </body>
 </html>
