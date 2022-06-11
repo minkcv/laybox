@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Laybox</title>
+    <style>
+        body {
+            margin: 0px;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+    </style>
+    <script type="text/javascript">
+        var boxes = [];
+        var currentId = 0;
+        var canvas;
+        var ctx;
+        var boxList;
+        var mouseDown = false;
+        var mouseWasDown = false;
+        var mouseX = 0;
+        var mouseY = 0;
+        var mouseDX = 0;
+        var mouseDY = 0;
+        var selectedBox;
+        window.onload = function() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            boxList = document.getElementById('box-list');
+        }
+        function getNextId() {
+            var nextId = currentId + 1;
+            var existing = [];
+            boxes.forEach((b) => {
+                existing.push(b.id);
+            });
+            while (existing.includes(nextId))
+                nextId++;
+            return nextId;
+        }
+        function selectBox() {
+            selectedBox = null;
+            var id = parseInt(boxList.value);
+            boxes.forEach((b) => {
+                if (b.id == id)
+                selectedBox = b;
+            });
+            if (selectedBox) {
+                document.getElementById('xpos').value = selectedBox.x;
+                document.getElementById('ypos').value = selectedBox.y;
+                document.getElementById('width').value = selectedBox.w;
+                document.getElementById('height').value = selectedBox.h;
+                document.getElementById('rotation').value = selectedBox.r;
+            }
+            else {
+                document.getElementById('xpos').value = "";
+                document.getElementById('ypos').value = "";
+                document.getElementById('width').value = "";
+                document.getElementById('height').value = "";
+                document.getElementById('rotation').value = 0;
+            }
+            update();
+        }
+        function addBox() {
+            var id = getNextId();
+            var b = {
+                id: id,
+                w: 20,
+                h: 20,
+                x: 200,
+                y: 120,
+                r: 0
+            };
+            boxes.push(b);
+            var option = document.createElement('option');
+            option.text = id;
+            boxList.add(option);
+            boxList.selectedIndex = boxList.options.length - 1;
+            selectBox();
+        }
+        function removeBox() {
+            var id = parseInt(boxList.value);
+            if (! isNaN(id)){
+                for (var i = 0; i < boxes.length; i++) {
+                    if (boxes[i].id == id) {
+                        boxes.splice(i, 1);
+                        break;
+                    }
+                }
+                boxList.options.remove(boxList.selectedIndex);
+                selectBox();
+            }
+        }
+        function changeX() {
+            var x = parseInt(document.getElementById('xpos').value);
+            if (selectedBox)
+                selectedBox.x = x;
+            update();
+        }
+        function changeY() {
+            var y = parseInt(document.getElementById('ypos').value);
+            if (selectedBox)
+                selectedBox.y = y;
+                update();
+        }
+        function changeWidth() {
+            var width = parseInt(document.getElementById('width').value);
+            if (selectedBox)
+                selectedBox.w = width;
+            update();
+        }
+        function changeHeight() {
+            var height = parseInt(document.getElementById('height').value);
+            if (selectedBox)
+                selectedBox.h = height;
+            update();
+        }
+        function changeRotation() {
+            var rotation = parseInt(document.getElementById('rotation').value);
+            if (selectedBox)
+                selectedBox.r = rotation;
+            update();
+        }
+        function canvasDown(event) {
+            mouseDown = true;
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        }
+        function canvasUp(event) {
+            mouseDown = false;
+            mouseWasDown = false;
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+            
+        }
+        function canvasMove(event) {
+            if (mouseDown) {
+                mouseDX = mouseX - event.clientX;
+                mouseDY = mouseY - event.clientY;
+                if (selectedBox) {
+                    selectedBox.x -= mouseDX;
+                    selectedBox.y -= mouseDY;
+                    document.getElementById('xpos').value = selectedBox.x;
+                    document.getElementById('ypos').value = selectedBox.y;
+                }
+            }
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+            update();
+        }
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            boxes.forEach((box) => {
+                ctx.save();
+                ctx.beginPath();
+                ctx.translate(box.x + box.w / 2, box.y + box.h / 2);
+                ctx.rotate(box.r * Math.PI / 180);
+                ctx.rect(-box.w / 2, -box.h / 2, box.w, box.h);
+                if (selectedBox && box.id == selectedBox.id)
+                    ctx.strokeStyle = '#ff0000';
+                else
+                    ctx.strokeStyle = '#0000ff';
+                ctx.stroke();
+                ctx.closePath();
+                ctx.restore();
+            });
+        }
+        function saveJSON() {
+            document.getElementById('json-text').value = JSON.stringify(boxes);
+        }
+        function loadJSON() {
+            selectedBox = null;
+            while (boxList.options.length > 0)
+                boxList.options.remove(0);
+            boxes = JSON.parse(document.getElementById('json-text').value);
+            boxes.forEach((b) => {
+                var option = document.createElement('option');
+                option.text = b.id;
+                boxList.add(option);
+            });
+            update();
+        }
+    </script>
+</head>
+<body>
+    <canvas id='canvas' width='400' height='240'
+    onmousedown="canvasDown(event)"
+    onmouseup="canvasUp(event)"
+    onmousemove="canvasMove(event)"
+    ></canvas>
+    <span>
+        <select id="box-list" size="10" style="width: 60px" onchange="selectBox()"></select>
+    </span>
+    <span style="display: inline-block">
+        <ul>
+        <li><button onclick="addBox()">Add Box</button></li>
+        <li><button onclick="removeBox()">Remove Box</button></li>
+        <li>X: <input type='number' id='xpos' onchange='changeX()'/></li>
+        <li>Y: <input type='number' id='ypos' onchange='changeY()'/></li>
+        <li>Width: <input type='number' id="width" onchange="changeWidth()"/></li>
+        <li>Height: <input type='number' id="height" onchange="changeHeight()"/></li>
+        <li>Rotation: <input type="range" min="0" max="180" value="0" id="rotation" onchange="changeRotation()"/></li>
+        </ul>
+    </span>
+    <div>
+        <button onclick="saveJSON()">Save to JSON</button>
+        <input type="text" id="json-text"/>
+        <button onclick="loadJSON()">Load from JSON</button>
+    </div>
+    
+</body>
+</html>
